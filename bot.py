@@ -26,30 +26,35 @@ async def start(update: Update, context):
 # Функція для виключення з тегання
 async def optout(update: Update, context):
     user_id = update.effective_user.id
-    # Перевіряємо, чи користувач вже є у базі
-    if optout_collection.find_one({"user_id": user_id}):
-        await update.message.reply_text("Ви вже виключені з тегання.")
+    chat_id = update.effective_chat.id
+    
+    # Перевіряємо, чи користувач вже виключений у цьому чаті
+    if optout_collection.find_one({"user_id": user_id, "chat_id": chat_id}):
+        await update.message.reply_text("Ви вже виключені з тегання в цьому чаті.")
     else:
-        optout_collection.insert_one({"user_id": user_id})
-        await update.message.reply_text("Вас виключено з тегання.")
+        optout_collection.insert_one({"user_id": user_id, "chat_id": chat_id})
+        await update.message.reply_text("Вас виключено з тегання в цьому чаті.")
 
 # Функція для повернення у список тегання
 async def optin(update: Update, context):
     user_id = update.effective_user.id
-    # Перевіряємо, чи користувач у базі та видаляємо його
-    if optout_collection.find_one({"user_id": user_id}):
-        optout_collection.delete_one({"user_id": user_id})
-        await update.message.reply_text("Вас додано до списку тегання.")
+    chat_id = update.effective_chat.id
+    
+    # Перевіряємо, чи користувач виключений у цьому чаті, і видаляємо його
+    if optout_collection.find_one({"user_id": user_id, "chat_id": chat_id}):
+        optout_collection.delete_one({"user_id": user_id, "chat_id": chat_id})
+        await update.message.reply_text("Вас додано до списку тегання в цьому чаті.")
     else:
-        await update.message.reply_text("Вас не було виключено з тегання.")
+        await update.message.reply_text("Вас не було виключено з тегання в цьому чаті.")
 
 # Функція для тегання всіх (за винятком тих, хто виключив себе)
 async def tag_all(update: Update, context):
     chat = update.effective_chat
+    chat_id = chat.id
     members = await context.bot.get_chat_administrators(chat.id)
 
-    # Отримуємо список користувачів, які виключили себе з тегання
-    optout_users = optout_collection.find({})
+    # Отримуємо список користувачів, які виключили себе з тегання в цьому чаті
+    optout_users = optout_collection.find({"chat_id": chat_id})
     optout_user_ids = [user["user_id"] for user in optout_users]
 
     # Генеруємо випадкові емодзі для кожного користувача і перевіряємо, чи він у списку виключених
