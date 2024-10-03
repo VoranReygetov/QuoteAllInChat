@@ -51,8 +51,12 @@ async def optin(update: Update, context):
 
 # Функція для тегання всіх (за винятком тих, хто виключив себе)
 async def tag_all(update: Update, context):
+
     chat = update.effective_chat
     chat_id = chat.id
+    if chat.type not in (chat.GROUP, chat.SUPERGROUP):
+        await update.message.reply_text("Ця команда доступна лише в групах.")
+
     members = await context.bot.get_chat_administrators(chat.id)
 
     # Отримуємо список користувачів, які виключили себе з тегання в цьому чаті
