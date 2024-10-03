@@ -1,14 +1,16 @@
-import random
+import random, os
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 from telegram import Update
 from telegram.ext import Application, CommandHandler
+from dotenv import load_dotenv
 
+load_dotenv()
 # Ваш токен
-TOKEN = '7271802754:AAERCOjt5jnA1lGxEoFVkMQzxedlMKLdgH4'
+TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
 # Create a new client and connect to the server
-uri = "mongodb+srv://voran009:bXRdnafc5uspejem@qouteallchats.o3dy4.mongodb.net/?retryWrites=true&w=majority&appName=QouteAllChats"
+uri = os.getenv("MONGO_URI")
 client = MongoClient(uri, server_api=ServerApi('1'))
 db = client["telegram_bot_db"]
 optout_collection = db["optout_users"]
