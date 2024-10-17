@@ -3,9 +3,23 @@ from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 from telegram import Update
 from telegram.ext import Application, CommandHandler
+from flask import Flask
+from threading import Thread
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# Web server setup
+app = Flask(__name__)
+
+@app.route('/')
+def index():
+    return "Bot is running."
+
+def run_web_server():
+    port = int(os.environ.get("PORT", 8000))  # Render will set the port automatically
+    app.run(host="0.0.0.0", port=port)
+
 # Ваш токен
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
@@ -90,6 +104,10 @@ if __name__ == '__main__':
     application.add_handler(tag_all_handler)
     application.add_handler(optout_handler)
     application.add_handler(optin_handler)
+
+    # Run web server in a separate thread
+    web_thread = Thread(target=run_web_server)
+    web_thread.start()
 
     # Запускаємо бота
     application.run_polling()
