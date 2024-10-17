@@ -5,6 +5,7 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler
 from flask import Flask
 from threading import Thread
+from functools import wraps
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -39,6 +40,21 @@ def get_random_emoji():
 async def start(update: Update, context):
     await update.message.reply_text("Hello! I'm a bot.")
 
+
+
+
+def group_only(func):
+    @wraps(func)
+    async def wrapper(update: Update, context):
+        chat = update.effective_chat
+        if chat.type not in (chat.GROUP, chat.SUPERGROUP):
+            await update.message.reply_text("Ця команда доступна лише в групах.")
+            return
+        return await func(update, context)
+    return wrapper
+
+
+@group_only
 # Функція для виключення з тегання
 async def optout(update: Update, context):
     user_id = update.effective_user.id
@@ -51,6 +67,7 @@ async def optout(update: Update, context):
         optout_collection.insert_one({"user_id": user_id, "chat_id": chat_id})
         await update.message.reply_text("Вас виключено з тегання в цьому чаті.")
 
+@group_only
 # Функція для повернення у список тегання
 async def optin(update: Update, context):
     user_id = update.effective_user.id
@@ -63,13 +80,15 @@ async def optin(update: Update, context):
     else:
         await update.message.reply_text("Вас не було виключено з тегання в цьому чаті.")
 
+@group_only
 # Функція для тегання всіх (за винятком тих, хто виключив себе)
 async def tag_all(update: Update, context):
 
     chat = update.effective_chat
     chat_id = chat.id
-    if chat.type not in (chat.GROUP, chat.SUPERGROUP):
-        await update.message.reply_text("Ця команда доступна лише в групах.")
+    # if chat.type not in (chat.GROUP, chat.SUPERGROUP):
+    #     await update.message.reply_text("Ця команда доступна лише в групах.")
+    #     return
 
     members = await context.bot.get_chat_administrators(chat.id)
 
@@ -89,6 +108,39 @@ async def tag_all(update: Update, context):
     else:
         await update.message.reply_text("Немає користувачів для тегання.")
 
+@group_only
+async def list_optout_users(update: Update, context):
+
+    chat = update.effective_chat
+    chat_id = chat.id
+    # if chat.type not in (chat.GROUP, chat.SUPERGROUP):
+    #     await update.message.reply_text("Ця команда доступна лише в групах.")
+    #     return
+
+    # Отримуємо список користувачів, які виключили себе з тегання в цьому чаті
+    optout_users = optout_collection.find({"chat_id": chat_id})
+    optout_user_ids = [user["user_id"] for user in optout_users]
+
+    if not optout_user_ids:
+        await update.message.reply_text("Ніхто не виключив себе з тегання в цьому чаті.")
+        return
+
+    # Створюємо список користувачів, які виключили себе
+    optout_usernames = []
+    for user_id in optout_user_ids:
+        user = await context.bot.get_chat_member(chat_id, user_id)
+        if user.user.username:
+            optout_usernames.append(f"@{user.user.username}")
+        else:
+            optout_usernames.append(f"{user.user.first_name} {user.user.last_name or ''}")
+
+    # Виводимо список виключених користувачів
+    if optout_usernames:
+        await update.message.reply_text("Користувачі, що виключили себе з тегання:\n" + "\n".join(optout_usernames))
+    else:
+        await update.message.reply_text("Немає користувачів, що виключили себе з тегання.")
+
+
 if __name__ == '__main__':
     # Створюємо Application
     application = Application.builder().token(TOKEN).build()
@@ -98,12 +150,13 @@ if __name__ == '__main__':
     tag_all_handler = CommandHandler('all', tag_all)
     optout_handler = CommandHandler('optout', optout)
     optin_handler = CommandHandler('optin', optin)
-
+    optout_list_handler = CommandHandler('optout_list', list_optout_users)
     # Додаємо команди в обробник
     application.add_handler(start_handler)
     application.add_handler(tag_all_handler)
     application.add_handler(optout_handler)
     application.add_handler(optin_handler)
+    application.add_handler(optout_list_handler)
 
     # Run web server in a separate thread
     web_thread = Thread(target=run_web_server)
