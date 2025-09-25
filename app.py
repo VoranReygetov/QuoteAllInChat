@@ -3,6 +3,7 @@ import asyncio
 import logging
 from flask import Flask, request
 from bot import create_application
+from telegram import Update
 
 # === Logging setup ===
 logging.basicConfig(
@@ -27,13 +28,14 @@ def index():
 
 @app.route(f"/webhook/{WEBHOOK_SECRET}", methods=["POST"])
 def webhook():
-    update = request.get_json(force=True)
-    logger.info(f"Received update: {update.get('update_id', 'no_id')}")
+    update_data = request.get_json(force=True)
+    logger.info(f"Received update: {update_data.get('update_id', 'no_id')}")
     try:
-        application.update_queue.put_nowait(update)
-        logger.info("Update successfully pushed to PTB queue")
-    except Exception as e:
-        logger.exception("Failed to push update to queue")
+        update = Update.de_json(update_data, application.bot)
+        application.process_update(update)
+        logger.info("Update processed successfully")
+    except Exception:
+        logger.exception("Failed to process update")
     return "ok"
 
 
