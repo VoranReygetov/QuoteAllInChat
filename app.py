@@ -10,7 +10,7 @@ WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # https://yourdomain.com/webhook/<secret
 
 @app.route("/")
 def index():
-    return "Bot is running via webhook."
+    return "Bot is running."
 
 @app.route(f"/webhook/{WEBHOOK_SECRET}", methods=["POST"])
 def webhook():
@@ -19,7 +19,7 @@ def webhook():
     return "ok"
 
 async def set_webhook():
-    await application.bot.set_webhook(f"{WEBHOOK_URL}/webhook/{WEBHOOK_SECRET}")
+    application.bot.set_webhook(url=f"{WEBHOOK_URL}/webhook/{WEBHOOK_SECRET}")
 
 if __name__ == "__main__":
     asyncio.run(set_webhook())
