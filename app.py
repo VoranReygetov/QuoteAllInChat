@@ -1,7 +1,7 @@
 import os
 from flask import Flask, request
 from bot import create_application
-
+import asyncio
 app = Flask(__name__)
 application = create_application()
 
@@ -18,7 +18,10 @@ def webhook():
     application.update_queue.put_nowait(update)
     return "ok"
 
+async def set_webhook():
+    await application.bot.set_webhook(f"{WEBHOOK_URL}/webhook/{WEBHOOK_SECRET}")
+
 if __name__ == "__main__":
-    application.bot.set_webhook(f"{WEBHOOK_URL}/webhook/{WEBHOOK_SECRET}")
+    asyncio.run(set_webhook())
     port = int(os.environ.get("PORT", 8000))
     app.run(host="0.0.0.0", port=port)
