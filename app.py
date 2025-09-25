@@ -7,7 +7,7 @@ from asgiref.wsgi import WsgiToAsgi
 import uvicorn
 
 from telegram import Update
-from bot import create_application  # 👈 your existing bot factory
+from bot import create_application
 
 # === Logging setup ===
 logging.basicConfig(
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 # === Environment config ===
 WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET")
-WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # e.g. https://yourdomain.com
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 PORT = int(os.getenv("PORT", 8000))
 
 if not WEBHOOK_URL or not WEBHOOK_SECRET:
@@ -26,7 +26,7 @@ if not WEBHOOK_URL or not WEBHOOK_SECRET:
 
 # === Flask + PTB setup ===
 app = Flask(__name__)
-application = create_application()  # builds PTB Application from your bot.py
+application = create_application()  
 
 
 # === Flask routes ===
